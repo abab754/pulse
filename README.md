@@ -38,7 +38,7 @@ Lightweight API monitoring for small teams. Send telemetry events from any backe
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/your-username/pulse.git
+git clone https://github.com/abab754/pulse.git
 cd pulse
 pnpm install
 
