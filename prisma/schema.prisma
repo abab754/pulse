@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String
+  projects  Project[]
+  createdAt DateTime  @default(now())
+}
+
+model Project {
+  id          String       @id @default(cuid())
+  name        String
+  apiKey      String       @unique
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  events      Event[]
+  alertConfig AlertConfig?
+  createdAt   DateTime     @default(now())
+
+  @@index([apiKey])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  timestamp   DateTime
+  route       String
+  method      String
+  statusCode  Int
+  latencyMs   Int
+  environment String   @default("production")
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, timestamp])
+  @@index([projectId, route, timestamp])
+}
+
+model AlertConfig {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id])
+  slackWebhookUrl     String?
+  p95LatencyThreshold Int      @default(1000)
+  errorRateThreshold  Float    @default(0.05)
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
