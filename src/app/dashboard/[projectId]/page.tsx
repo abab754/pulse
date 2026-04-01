@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
@@ -12,6 +13,7 @@ import { VolumeChart } from "@/components/volume-chart";
 import { RecentEvents } from "@/components/recent-events";
 import { AnomalyPanel } from "@/components/anomaly-panel";
 import { AlertSettings } from "@/components/alert-settings";
+import { Badge } from "@/components/ui/badge";
 
 type Params = Promise<{ projectId: string }>;
 
@@ -38,16 +40,24 @@ export default async function DashboardPage({ params }: { params: Params }) {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-zinc-900">
+      <header className="border-b bg-white dark:bg-zinc-900 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight">Pulse</h1>
+            <Link
+              href="/"
+              className="text-xl font-bold tracking-tight hover:opacity-70 transition-opacity"
+            >
+              Pulse
+            </Link>
             <span className="text-muted-foreground">/</span>
             <span className="text-sm font-medium">{project.name}</span>
+            <Badge variant="secondary" className="text-xs">
+              Live
+            </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-              {project.apiKey.slice(0, 12)}...
+          <div className="flex items-center gap-3">
+            <code className="hidden sm:block text-xs bg-muted px-3 py-1.5 rounded-md font-mono select-all">
+              {project.apiKey}
             </code>
           </div>
         </div>
@@ -57,6 +67,9 @@ export default async function DashboardPage({ params }: { params: Params }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Last 24 Hours</h2>
+          <p className="text-xs text-muted-foreground">
+            Auto-refreshes on page load
+          </p>
         </div>
 
         <StatsCards stats={stats} />
@@ -71,11 +84,20 @@ export default async function DashboardPage({ params }: { params: Params }) {
           <AlertSettings projectId={project.id} />
         </div>
 
-        <RecentEvents events={recentEvents.map((e) => ({
-          ...e,
-          timestamp: e.timestamp.toISOString(),
-        }))} />
+        <RecentEvents
+          events={recentEvents.map((e) => ({
+            ...e,
+            timestamp: e.timestamp.toISOString(),
+          }))}
+        />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t mt-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 text-center text-xs text-muted-foreground">
+          Pulse — Lightweight API Observability
+        </div>
+      </footer>
     </div>
   );
 }
