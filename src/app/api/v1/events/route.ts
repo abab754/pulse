@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateApiKey } from "@/lib/api-key";
 import { EventPayloadSchema } from "@/types";
+import { checkAlerts } from "@/lib/alerts";
 
 export async function POST(req: NextRequest) {
   // 1. Authenticate via API key
@@ -61,6 +62,9 @@ export async function POST(req: NextRequest) {
   });
 
   await prisma.event.createMany({ data: events });
+
+  // Fire-and-forget: check alert thresholds after ingestion
+  checkAlerts(project.id).catch(console.error);
 
   return NextResponse.json(
     { accepted: events.length },

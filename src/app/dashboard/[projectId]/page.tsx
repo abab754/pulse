@@ -10,6 +10,8 @@ import { StatsCards } from "@/components/stats-cards";
 import { LatencyChart } from "@/components/latency-chart";
 import { VolumeChart } from "@/components/volume-chart";
 import { RecentEvents } from "@/components/recent-events";
+import { AnomalyPanel } from "@/components/anomaly-panel";
+import { AlertSettings } from "@/components/alert-settings";
 
 type Params = Promise<{ projectId: string }>;
 
@@ -62,6 +64,11 @@ export default async function DashboardPage({ params }: { params: Params }) {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <LatencyChart data={latencySeries} />
           <VolumeChart data={volumeSeries} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <AnomalyPanel projectId={project.id} />
+          <AlertSettings projectId={project.id} />
         </div>
 
         <RecentEvents events={recentEvents.map((e) => ({
