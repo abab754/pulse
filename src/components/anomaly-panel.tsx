@@ -11,9 +11,14 @@ export function AnomalyPanel({ projectId }: { projectId: string }) {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(false);
 
   async function handleExplain() {
+    if (cooldown) return;
     setLoading(true);
+    // 60-second cooldown between clicks
+    setCooldown(true);
+    setTimeout(() => setCooldown(false), 60_000);
     setError(null);
     try {
       const res = await fetch("/api/explain", {
@@ -42,11 +47,11 @@ export function AnomalyPanel({ projectId }: { projectId: string }) {
         </CardTitle>
         <Button
           onClick={handleExplain}
-          disabled={loading}
+          disabled={loading || cooldown}
           size="sm"
           variant="outline"
         >
-          {loading ? "Analyzing..." : "Explain Last 60 Min"}
+          {loading ? "Analyzing..." : cooldown ? "Wait 60s..." : "Explain Last 60 Min"}
         </Button>
       </CardHeader>
       <CardContent>
