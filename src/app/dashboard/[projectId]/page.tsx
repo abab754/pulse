@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ProjectSwitcher } from "@/components/project-switcher";
 
 export const dynamic = "force-dynamic";
 import {
@@ -32,6 +33,13 @@ export default async function DashboardPage({ params }: { params: Params }) {
 
   if (!project) notFound();
 
+  // Get all user projects for the switcher
+  const allProjects = await prisma.project.findMany({
+    where: { userId: session?.user?.id },
+    select: { id: true, name: true },
+    orderBy: { createdAt: "asc" },
+  });
+
   const now = new Date();
   const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -42,6 +50,9 @@ export default async function DashboardPage({ params }: { params: Params }) {
     getRecentEvents(project.id),
   ]);
 
+  // Mask API key: show prefix + last 4 chars only
+  const maskedKey = `${project.apiKey.slice(0, 4)}${"*".repeat(8)}${project.apiKey.slice(-4)}`;
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
@@ -49,20 +60,23 @@ export default async function DashboardPage({ params }: { params: Params }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/"
+              href="/dashboard"
               className="text-xl font-bold tracking-tight hover:opacity-70 transition-opacity"
             >
               Pulse
             </Link>
             <span className="text-muted-foreground">/</span>
-            <span className="text-sm font-medium">{project.name}</span>
+            <ProjectSwitcher
+              projects={allProjects}
+              currentProjectId={project.id}
+            />
             <Badge variant="secondary" className="text-xs">
               Live
             </Badge>
           </div>
           <div className="flex items-center gap-3">
-            <code className="hidden sm:block text-xs bg-muted px-3 py-1.5 rounded-md font-mono select-all">
-              {project.apiKey}
+            <code className="hidden sm:block text-xs bg-muted px-3 py-1.5 rounded-md font-mono">
+              {maskedKey}
             </code>
             <SignOutButton />
           </div>

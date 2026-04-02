@@ -1,15 +1,21 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await auth();
+  const isLoggedIn = !!session?.user;
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <header className="border-b bg-white dark:bg-zinc-900">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold tracking-tight">Pulse</h1>
-          <Link href="/dashboard">
-            <Button size="sm">Dashboard</Button>
+          <Link href={isLoggedIn ? "/dashboard" : "/login"}>
+            <Button size="sm">
+              {isLoggedIn ? "Dashboard" : "Sign In"}
+            </Button>
           </Link>
         </div>
       </header>
@@ -36,9 +42,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/dashboard">
+            <Link href={isLoggedIn ? "/dashboard" : "/login"}>
               <Button size="lg" className="px-8">
-                View Demo Dashboard
+                {isLoggedIn ? "Go to Dashboard" : "Get Started"}
               </Button>
             </Link>
             <Link href="#quickstart">
