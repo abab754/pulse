@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { prisma } from "./prisma";
 
 /**
@@ -10,8 +10,20 @@ export function generateApiKey(): string {
 }
 
 /**
+ * SHA-256 hash of an API key. This is what we store in the DB.
+ * The plaintext key is shown once to the user at creation time,
+ * then only the hash is kept.
+ */
+export function hashApiKey(apiKey: string): string {
+  return createHash("sha256").update(apiKey).digest("hex");
+}
+
+/**
  * Validates an API key from the Authorization header and returns the project.
  * Expected format: "Bearer pls_..."
+ *
+ * Lookup strategy: hash the incoming key and find by apiKeyHash.
+ * Falls back to plaintext lookup for keys created before hashing was added.
  */
 export async function validateApiKey(authHeader: string | null) {
   if (!authHeader?.startsWith("Bearer ")) {
@@ -23,10 +35,29 @@ export async function validateApiKey(authHeader: string | null) {
     return null;
   }
 
-  const project = await prisma.project.findUnique({
-    where: { apiKey },
+  const keyHash = hashApiKey(apiKey);
+
+  // Try hash-based lookup first (new keys)
+  let project = await prisma.project.findFirst({
+    where: { apiKeyHash: keyHash },
     select: { id: true, name: true },
   });
+
+  // Fallback: plaintext lookup (legacy keys pre-hashing)
+  if (!project) {
+    project = await prisma.project.findUnique({
+      where: { apiKey },
+      select: { id: true, name: true },
+    });
+
+    // Backfill the hash if found via plaintext
+    if (project) {
+      await prisma.project.update({
+        where: { id: project.id },
+        data: { apiKeyHash: keyHash },
+      });
+    }
+  }
 
   return project;
 }

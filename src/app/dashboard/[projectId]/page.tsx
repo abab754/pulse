@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { SignOutButton } from "@/components/sign-out-button";
 
 export const dynamic = "force-dynamic";
 import {
@@ -21,9 +23,10 @@ type Params = Promise<{ projectId: string }>;
 
 export default async function DashboardPage({ params }: { params: Params }) {
   const { projectId } = await params;
+  const session = await auth();
 
   const project = await prisma.project.findUnique({
-    where: { id: projectId },
+    where: { id: projectId, userId: session?.user?.id },
     select: { id: true, name: true, apiKey: true },
   });
 
@@ -61,6 +64,7 @@ export default async function DashboardPage({ params }: { params: Params }) {
             <code className="hidden sm:block text-xs bg-muted px-3 py-1.5 rounded-md font-mono select-all">
               {project.apiKey}
             </code>
+            <SignOutButton />
           </div>
         </div>
       </header>

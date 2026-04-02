@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { validateApiKey } from "@/lib/api-key";
 import { EventPayloadSchema } from "@/types";
 import { checkAlerts } from "@/lib/alerts";
+import { ingestionLimiter } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   // 1. Authenticate via API key
@@ -12,6 +13,17 @@ export async function POST(req: NextRequest) {
       { error: "Invalid or missing API key" },
       { status: 401 }
     );
+  }
+
+  // 1.5. Rate limit by project ID
+  if (ingestionLimiter) {
+    const { success } = await ingestionLimiter.limit(project.id);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Max 100 requests per 60 seconds." },
+        { status: 429 }
+      );
+    }
   }
 
   // 2. Parse and validate body

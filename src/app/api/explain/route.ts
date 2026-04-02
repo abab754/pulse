@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { explainAnomaly } from "@/lib/anomaly";
-
-// Simple in-memory rate limit: 1 request per project per 30 seconds.
-// Resets on deploy (serverless cold start), which is fine for MVP.
-const lastCall = new Map<string, number>();
-const RATE_LIMIT_MS = 30_000;
+import { explainLimiter } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -24,17 +20,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Rate limit check
-  const now = Date.now();
-  const last = lastCall.get(projectId) ?? 0;
-  if (now - last < RATE_LIMIT_MS) {
-    const waitSec = Math.ceil((RATE_LIMIT_MS - (now - last)) / 1000);
-    return NextResponse.json(
-      { error: `Rate limited. Try again in ${waitSec}s.` },
-      { status: 429 }
-    );
+  // Rate limit: 5 requests per 60 seconds per project
+  if (explainLimiter) {
+    const { success } = await explainLimiter.limit(projectId);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Rate limited. Max 5 explanations per minute." },
+        { status: 429 }
+      );
+    }
   }
-  lastCall.set(projectId, now);
 
   try {
     const explanation = await explainAnomaly(projectId);

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 
 const adapter = new PrismaNeon({
   connectionString: process.env.DATABASE_URL,
@@ -58,6 +58,7 @@ async function main() {
       id: "demo-project",
       name: "Acme API",
       apiKey,
+      apiKeyHash: createHash("sha256").update(apiKey).digest("hex"),
       userId: user.id,
     },
   });
